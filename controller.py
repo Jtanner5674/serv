@@ -1,4 +1,4 @@
-from flask import Flask, render_template, request, redirect, url_for, flash, jsonify
+from flask import Flask, render_template, request, redirect, url_for, flash, jsonify, session
 import logging
 import ctypes
 import sys
@@ -13,11 +13,12 @@ from server_tools import connect_to_db
 app = Flask(__name__)
 app.secret_key = 'nti_secret_key_2024'
 
+# Set your desired password
+PASSWORD = "Pr0j3ctFW1m"
+
 # Configure logging
 logging.basicConfig(level=logging.INFO, format='%(asctime)s - %(levelname)s - %(message)s')
 logger = logging.getLogger(__name__)
-
-
 
 # Database operations
 def create_license(conn, user_id):
@@ -78,11 +79,28 @@ def filter_licenses(licenses, search_term):
         if search_term in str(license['id']).lower() or \
            search_term in str(license['activation_key']).lower()
     ]
+# Password protection
+@app.route('/login', methods=['GET', 'POST'])
+def login():
+    """ Password login page route """
+    if request.method == 'POST':
+        password = request.form.get('password')
+        if password == PASSWORD:
+            session['logged_in'] = True
+            flash("Login successful!", "success")
+            return redirect(url_for('index'))
+        else:
+            flash("Incorrect password. Please try again.", "error")
+            return render_template('login.html')
+    
+    return render_template('login.html')
 
-# Flask routes
 @app.route('/')
 def index():
     """ Main page route """
+    if not session.get('logged_in'):
+        return redirect(url_for('login'))  # Redirect to login if not authenticated
+    
     try:
         conn = connect_to_db()
         licenses = list_entries(conn)
@@ -91,7 +109,7 @@ def index():
         logger.error(f"Error in index route: {e}")
         flash(f"Error: {str(e)}", "error")
         return render_template('index.html', licenses=[])
-
+    
 @app.route('/search')
 def search():
     """Dynamic search endpoint"""
@@ -189,6 +207,7 @@ def main():
     else:
         parser.print_help()
 
+# Flask app initialization
 if __name__ == "__main__":
     if len(sys.argv) > 1:
         main()
