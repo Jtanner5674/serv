@@ -17,19 +17,28 @@ def connect_to_db():
     )
     return conn
 
-def create_license(conn, user_id):
-    """ Create a license entry and return the activation key. """
+def create_license(conn, user_id, company="individual"):
+    """ Create a license entry and return the activation key, tracking company. """
     activation_key = str(uuid.uuid4())
     default_hash = "default_hash_value"
     
     with conn.cursor() as cur:
         cur.execute("""
-            INSERT INTO licenses (id, activation_key, hash, activated_on)
-            VALUES (%s, %s, %s, %s)
-        """, (user_id, activation_key, default_hash, None))  # Pass None for NULL
+            INSERT INTO licenses (id, activation_key, hash, activated_on, company)
+            VALUES (%s, %s, %s, %s, %s)
+        """, (user_id, activation_key, default_hash, None, company))
     conn.commit()
 
     return activation_key
+
+
+def count_licenses_by_company(conn, company_name):
+    """ Count licenses for a specific company. """
+    with conn.cursor() as cur:
+        cur.execute("SELECT COUNT(*) FROM licenses WHERE company_name = %s", (company_name,))
+        count = cur.fetchone()[0]
+    return count
+
 
 def initialize_db(conn):
     """ Initialize the database by creating the licenses table if it doesn't exist. """
