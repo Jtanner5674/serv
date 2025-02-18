@@ -64,10 +64,9 @@ def list_entries(conn):
 
 # Helper functions
 def is_admin():
-    try:
-        return ctypes.windll.shell32.IsUserAnAdmin()
-    except:
-        return False
+    """Check if the script is run as root (UID 0)."""
+    return os.geteuid() == 0
+
 
 def filter_licenses(licenses, search_term):
     """Filter licenses based on search term"""
