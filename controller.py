@@ -1,4 +1,4 @@
-from flask import Flask, render_template, request, redirect, url_for, flash, jsonify, session
+from flask import Flask, render_template, request, redirect, url_for, flash, jsonify, session, Response
 import logging
 import ctypes
 import sys
@@ -12,7 +12,7 @@ from waitress import serve
 from server_tools import connect_to_db
 app = Flask(__name__)
 app.secret_key = 'nti_secret_key_2024'
-
+ 
 # Set your desired password
 PASSWORD = "Pr0j3ctFW1m"
 
@@ -125,32 +125,56 @@ def search():
 
 @app.route('/create', methods=['POST'])
 def create_new_license():
-    """ Create new license route """
+    """ Create new license route with company tracking """
     try:
         conn = connect_to_db()
         user_id = request.form.get('user_id')
+        company = request.form.get('company', 'individual')  # Default to 'individual' unless specified
+
         if not user_id:
             flash("User ID is required", "error")
             return redirect(url_for('index'))
-        
-        activation_key = create_license(conn, user_id)
+
+        activation_key = create_license(conn, user_id, company)
         flash(f"License created successfully. Key: {activation_key}", "success")
     except Exception as e:
         logger.error(f"Error creating license: {e}")
         flash(f"Failed to create license: {str(e)}", "error")
-    
+
     return redirect(url_for('index'))
+
+@app.route('/list_nti_licenses')
+def list_nti_licenses():
+    """List all licenses created by NTi"""
+    try:
+        conn = connect_to_db()
+        with conn.cursor() as cur:
+            cur.execute("SELECT * FROM licenses WHERE company = 'NTi'")
+            nti_licenses = cur.fetchall()
+        return render_template('nti_licenses.html', licenses=nti_licenses)
+    except Exception as e:
+        logger.error(f"Error fetching NTi licenses: {e}")
+        return render_template('nti_licenses.html', licenses=[], error=str(e))
+
 
 @app.route('/export', methods=['GET'])
 def export_licenses():
-    licenses = License.query.all()  # Adjust based on your ORM/query logic
-    def generate():
-        yield "ID,Activation Key,Status,Activated On\n"
-        for license in licenses:
-            status = "Activated" if license.activated_on else "Not Activated"
-            yield f"{license.id},{license.activation_key},{status},{license.activated_on or ''}\n"
-    return Response(generate(), mimetype='text/csv',
-                    headers={"Content-Disposition": "attachment;filename=licenses.csv"})
+    try:
+        conn = connect_to_db()
+        with conn.cursor() as cur:
+            cur.execute("SELECT * FROM licenses")
+            licenses = cur.fetchall()
+            def generate():
+                yield "ID,Activation Key,Status,Activated On\n"
+                for license in licenses:
+                    status = "Activated" if license['activated_on'] else "Not Activated"
+                    yield f"{license['id']},{license['activation_key']},{status},{license['activated_on'] or ''}\n"
+            return Response(generate(), mimetype='text/csv',
+                            headers={"Content-Disposition": "attachment;filename=licenses.csv"})
+    except Exception as e:
+        logger.error(f"Error exporting licenses: {e}")
+        return jsonify({"error": "Failed to export licenses"}), 500
+
 
 @app.route('/delete/<license_id>', methods=['POST'])
 def delete_license(license_id):
