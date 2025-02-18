@@ -116,10 +116,8 @@ def index():
             result = cur.fetchone()
             logger.info(f"Raw result of COUNT query: {result}")
             
-            if result:
-                nti_count = result[0]  # Get the count of NTi licenses
-            else:
-                nti_count = 0  # In case no result is found (unexpected if NTi licenses exist)
+            # Access the count from the dictionary
+            nti_count = result['COUNT(*)'] if result else 0  # Handle empty result gracefully
             
             logger.info(f"NTi count: {nti_count}")
         
