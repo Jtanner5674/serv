@@ -118,7 +118,7 @@ def index():
     except Exception as e:
         logger.error(f"Error in index route: {e}")
         flash(f"Error: {str(e)}", "error")
-        return render_template('index.html', licenses=[], nti_count=69
+        return render_template('index.html', licenses=[], nti_count=69)
 
 
 @app.route('/search')
