@@ -31,14 +31,12 @@ def create_license(conn, user_id, company="individual"):
 
     return activation_key
 
-
 def count_licenses_by_company(conn, company_name):
     """ Count licenses for a specific company. """
     with conn.cursor() as cur:
-        cur.execute("SELECT COUNT(*) FROM licenses WHERE company_name = %s", (company_name,))
+        cur.execute("SELECT COUNT(*) FROM licenses WHERE company = %s", (company_name,))
         count = cur.fetchone()[0]
     return count
-
 
 def initialize_db(conn):
     """ Initialize the database by creating the licenses table if it doesn't exist. """
@@ -48,7 +46,8 @@ def initialize_db(conn):
                 id VARCHAR(255) PRIMARY KEY,
                 activation_key VARCHAR(255) NOT NULL UNIQUE,
                 hash VARCHAR(255) NOT NULL,
-                activated_on TIMESTAMP NULL
+                activated_on TIMESTAMP NULL,
+                company VARCHAR(255) NOT NULL DEFAULT 'individual'  -- Ensure company column exists
             )
         """)
         conn.commit()
@@ -75,10 +74,10 @@ def main():
                         help='Initialize the database')
     parser.add_argument('--add',
                         metavar='ENTRY',
-                        help='Add an entry to the database. Example: --add "id=1 hash=hash activation_key=activation-key"')
+                        help='Add an entry to the database. Example: --add "user_id=1 company=NTi"')
     parser.add_argument('--remove',
                         metavar='ID',
-                        type=int,
+                        type=str,
                         help='Remove an entry from the database by ID')
     parser.add_argument('--list',
                         action='store_true',
@@ -89,19 +88,21 @@ def main():
     conn = connect_to_db()
 
     if args.init:
-        # Initialize the database (you can modify this to create the table if needed)
-        print("Initializing the database...")  # Add your initialization logic here
+        print("Initializing the database...")
+        initialize_db(conn)
     elif args.add:
-        arguments = args.add.split(' ')
-        entry = {
-            'id': arguments[0].split('id=')[-1],
-            'hash': arguments[1].split('hash=')[-1],
-            'activation_key': arguments[2].split('activation_key=')[-1],
-            'activated_on': arguments[3].split('activated_on=')[-1],
-        }
-        create_license(conn, entry['id'])
+        arguments = dict(arg.split('=') for arg in args.add.split(' '))
+        user_id = arguments.get('user_id')
+        company = arguments.get('company', 'individual')  # Default to 'individual'
+
+        if user_id:
+            activation_key = create_license(conn, user_id, company)
+            print(f"Created license with activation key: {activation_key}")
+        else:
+            print("Error: 'user_id' is required.")
     elif args.remove:
         remove_entry(conn, args.remove)
+        print(f"Entry with ID {args.remove} removed.")
     elif args.list:
         entries = list_entries(conn)
         for entry in entries:
