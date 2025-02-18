@@ -103,23 +103,23 @@ def index():
     try:
         conn = connect_to_db()
         licenses = list_entries(conn)
-                # Count the NTi licenses
+        
+        # Log to check if licenses are fetched correctly
+        logger.info(f"Fetched licenses: {licenses}")
+        
+        # Count the NTi licenses
         with conn.cursor() as cur:
             cur.execute("SELECT COUNT(*) FROM licenses WHERE company = 'NTi'")
             nti_count = cur.fetchone()[0]  # Fetch the count of NTi licenses
+            logger.info(f"NTi count: {nti_count}")
+        
         return render_template('index.html', licenses=licenses, nti_count=nti_count)
-    except Exception as e:
-        logger.error(f"Error in index route: {e}")
-        flash(f"Error: {str(e)}", "error")
-        return render_template('index.html', licenses=[])
-    
-
-
     
     except Exception as e:
         logger.error(f"Error in index route: {e}")
         flash(f"Error: {str(e)}", "error")
-        return render_template('index.html', licenses=[], nti_count=0)
+        return render_template('index.html', licenses=[], nti_count=69
+
 
 @app.route('/search')
 def search():
