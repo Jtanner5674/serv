@@ -110,15 +110,9 @@
         NTi License Management
     </header>
     <main>
-        {% with messages = get_flashed_messages(with_categories=true) %}
-            {% if messages %}
-                {% for category, message in messages %}
-                    <div class="flash {{ category }}">{{ message }}</div>
-                {% endfor %}
-            {% endif %}
-        {% endwith %}
-
         <div class="controls">
+            <p><strong>NTi Licenses Count:</strong> {{ nti_count }}</p>
+
             <input type="text" id="searchInput" placeholder="Search licenses by ID or key...">
 
             <form method="POST" action="{{ url_for('create_new_license') }}">
@@ -146,7 +140,7 @@
                             {% else %}
                                 Not activated
                             {% endif %}<br>
-                            <strong>Company:</strong> {{ license.company if license.company else 'Not NTi' }}<br>
+                            <strong>Company:</strong> {{ license.company_name if license.company_name != 'individual' else 'Not NTi' }}<br>
                         </div>
                         <form method="POST" action="{{ url_for('delete_license', license_id=license.id) }}">
                             <button type="submit" class="delete">Delete</button>
@@ -185,7 +179,7 @@
                                             ${license.activated_on 
                                                 ? `Activated on ${license.activated_on}` 
                                                 : 'Not activated'}<br>
-                                            <strong>Company:</strong> ${license.company ? license.company : 'Not NTi'}
+                                            <strong>Company:</strong> ${license.company_name ? license.company_name : 'Not NTi'}
                                         </div>
                                         <form method="POST" action="/delete/${license.id}">
                                             <button type="submit" class="delete">Delete</button>
