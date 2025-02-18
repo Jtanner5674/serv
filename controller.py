@@ -107,7 +107,7 @@ def index():
         with conn.cursor() as cur:
             cur.execute("SELECT COUNT(*) FROM licenses WHERE company = 'NTi'")
             nti_count = cur.fetchone()[0]  # Fetch the count of NTi licenses
-        return render_template('index.html', licenses=licenses, nti_count=nti_count
+        return render_template('index.html', licenses=licenses, nti_count=nti_count)
     except Exception as e:
         logger.error(f"Error in index route: {e}")
         flash(f"Error: {str(e)}", "error")
