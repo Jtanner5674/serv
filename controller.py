@@ -197,6 +197,24 @@ def delete_license(license_id):
     
     return redirect(url_for('index'))
 
+@app.route('/licenses')
+def list_licenses():
+    # Connect to your database
+    conn = mysql.connector.connect(host='localhost', user='root', password='password', database='your_db')
+    cursor = conn.cursor(dictionary=True)
+    
+    # Get all licenses
+    cursor.execute("SELECT * FROM licenses")
+    licenses = cursor.fetchall()
+    
+    # Get the count of NTi licenses
+    cursor.execute("SELECT COUNT(*) FROM licenses WHERE company = 'NTi'")
+    nti_count = cursor.fetchone()['COUNT(*)']
+    
+    conn.close()
+
+    return render_template('licenses.html', licenses=licenses, nti_count=nti_count)
+    
 # CLI interface
 def main():
     """ Command line interface for managing licenses. """
