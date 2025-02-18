@@ -140,7 +140,7 @@
                             {% else %}
                                 Not activated
                             {% endif %}<br>
-                            <strong>Company:</strong> {{ license.company_name if license.company_name != 'individual' else 'Not NTi' }}<br>
+                            <strong>Company:</strong> {{ license.company if license.company != 'individual' else 'Not NTi' }}<br>
                         </div>
                         <form method="POST" action="{{ url_for('delete_license', license_id=license.id) }}">
                             <button type="submit" class="delete">Delete</button>
@@ -179,7 +179,7 @@
                                             ${license.activated_on 
                                                 ? `Activated on ${license.activated_on}` 
                                                 : 'Not activated'}<br>
-                                            <strong>Company:</strong> ${license.company_name ? license.company_name : 'Not NTi'}
+                                            <strong>Company:</strong> ${license.company ? license.company : 'Not NTi'}
                                         </div>
                                         <form method="POST" action="/delete/${license.id}">
                                             <button type="submit" class="delete">Delete</button>
