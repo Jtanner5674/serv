@@ -21,16 +21,16 @@ logging.basicConfig(level=logging.INFO, format='%(asctime)s - %(levelname)s - %(
 logger = logging.getLogger(__name__)
 
 # Database operations
-def create_license(conn, user_id):
+def create_license(conn, user_id, company):
     """ Create a license entry and return the activation key. """
     activation_key = str(uuid.uuid4())
     default_hash = "default_hash_value"
     
     with conn.cursor() as cur:
-        cur.execute("""
-            INSERT INTO licenses (id, activation_key, hash, activated_on)
-            VALUES (%s, %s, %s, %s)
-        """, (user_id, activation_key, default_hash, None))
+        cur.execute(""" 
+            INSERT INTO licenses (id, activation_key, hash, activated_on, company) 
+            VALUES (%s, %s, %s, %s, %s)
+        """, (user_id, activation_key, default_hash, None, company))
     conn.commit()
 
     return activation_key
