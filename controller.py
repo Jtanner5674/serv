@@ -179,8 +179,8 @@ def license_management():
     # Get all licenses from the database
     licenses = License.query.all()
 
-    # Count how many have company_name == "NTi"
-    nti_count = License.query.filter_by(company_name='NTi').count()
+    # Count how many have company == "NTi"
+    nti_count = License.query.filter_by(company='NTi').count()
 
     return render_template('license_management.html', licenses=licenses, nti_count=nti_count)
 
