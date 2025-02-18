@@ -174,6 +174,15 @@ def export_licenses():
         logger.error(f"Error exporting licenses: {e}")
         return jsonify({"error": "Failed to export licenses"}), 500
 
+@app.route('/license_management')
+def license_management():
+    # Get all licenses from the database
+    licenses = License.query.all()
+
+    # Count how many have company_name == "NTi"
+    nti_count = License.query.filter_by(company_name='NTi').count()
+
+    return render_template('license_management.html', licenses=licenses, nti_count=nti_count)
 
 @app.route('/delete/<license_id>', methods=['POST'])
 def delete_license(license_id):
