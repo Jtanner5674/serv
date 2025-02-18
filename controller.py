@@ -102,12 +102,22 @@ def index():
     
     try:
         conn = connect_to_db()
+        
+        # Get all licenses
         licenses = list_entries(conn)
-        return render_template('index.html', licenses=licenses)
+        
+        # Count the NTi licenses
+        with conn.cursor() as cur:
+            cur.execute("SELECT COUNT(*) FROM licenses WHERE company = 'NTi'")
+            nti_count = cur.fetchone()[0]  # Fetch the count of NTi licenses
+
+        return render_template('index.html', licenses=licenses, nti_count=nti_count)
+    
     except Exception as e:
         logger.error(f"Error in index route: {e}")
         flash(f"Error: {str(e)}", "error")
-        return render_template('index.html', licenses=[])
+        return render_template('index.html', licenses=[], nti_count=0)
+
     
 @app.route('/search')
 def search():
@@ -141,20 +151,6 @@ def create_new_license():
         flash(f"Failed to create license: {str(e)}", "error")
 
     return redirect(url_for('index'))
-
-@app.route('/list_nti_licenses')
-def list_nti_licenses():
-    """List all licenses created by NTi"""
-    try:
-        conn = connect_to_db()
-        with conn.cursor() as cur:
-            cur.execute("SELECT * FROM licenses WHERE company = 'NTi'")
-            nti_licenses = cur.fetchall()
-        return render_template('nti_licenses.html', licenses=nti_licenses)
-    except Exception as e:
-        logger.error(f"Error fetching NTi licenses: {e}")
-        return render_template('nti_licenses.html', licenses=[], error=str(e))
-
 
 @app.route('/export', methods=['GET'])
 def export_licenses():
@@ -197,24 +193,7 @@ def delete_license(license_id):
     
     return redirect(url_for('index'))
 
-@app.route('/licenses')
-def list_licenses():
-    # Connect to your database
-    conn = mysql.connector.connect(host='localhost', user='root', password='password', database='your_db')
-    cursor = conn.cursor(dictionary=True)
-    
-    # Get all licenses
-    cursor.execute("SELECT * FROM licenses")
-    licenses = cursor.fetchall()
-    
-    # Get the count of NTi licenses
-    cursor.execute("SELECT COUNT(*) FROM licenses WHERE company = 'NTi'")
-    nti_count = cursor.fetchone()['COUNT(*)']
-    
-    conn.close()
 
-    return render_template('licenses.html', licenses=licenses, nti_count=nti_count)
-    
 # CLI interface
 def main():
     """ Command line interface for managing licenses. """
