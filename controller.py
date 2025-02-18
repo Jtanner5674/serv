@@ -104,14 +104,23 @@ def index():
         conn = connect_to_db()
         licenses = list_entries(conn)
         
-        # Log to check if licenses are fetched correctly
+        # Log the fetched licenses
         logger.info(f"Fetched licenses: {licenses}")
         
         # Count the NTi licenses
         with conn.cursor() as cur:
             logger.info("Running query to count NTi licenses.")
             cur.execute("SELECT COUNT(*) FROM licenses WHERE company = 'NTi'")
-            nti_count = cur.fetchone()[0]  # Fetch the count of NTi licenses
+            
+            # Debug: print the raw result of the query
+            result = cur.fetchone()
+            logger.info(f"Raw result of COUNT query: {result}")
+            
+            if result:
+                nti_count = result[0]  # Get the count of NTi licenses
+            else:
+                nti_count = 0  # In case no result is found (unexpected if NTi licenses exist)
+            
             logger.info(f"NTi count: {nti_count}")
         
         return render_template('index.html', licenses=licenses, nti_count=nti_count)
@@ -119,7 +128,7 @@ def index():
     except Exception as e:
         logger.error(f"Error in index route: {e}", exc_info=True)
         flash(f"Error: {str(e)}", "error")
-        return render_template('index.html', licenses=[], nti_count=420)
+        return render_template('index.html', licenses=[], nti_count=0)
 
 
 
