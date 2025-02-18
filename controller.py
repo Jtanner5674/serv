@@ -109,6 +109,7 @@ def index():
         
         # Count the NTi licenses
         with conn.cursor() as cur:
+            logger.info("Running query to count NTi licenses.")
             cur.execute("SELECT COUNT(*) FROM licenses WHERE company = 'NTi'")
             nti_count = cur.fetchone()[0]  # Fetch the count of NTi licenses
             logger.info(f"NTi count: {nti_count}")
@@ -116,9 +117,10 @@ def index():
         return render_template('index.html', licenses=licenses, nti_count=nti_count)
     
     except Exception as e:
-        logger.error(f"Error in index route: {e}")
+        logger.error(f"Error in index route: {e}", exc_info=True)
         flash(f"Error: {str(e)}", "error")
-        return render_template('index.html', licenses=[], nti_count=69)
+        return render_template('index.html', licenses=[], nti_count=420)
+
 
 
 @app.route('/search')
