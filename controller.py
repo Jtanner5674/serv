@@ -10,15 +10,226 @@ import pyperclip  # For clipboard functionality
 from datetime import datetime
 from waitress import serve
 from server_tools import connect_to_db
+import smtplib
+from email.mime.multipart import MIMEMultipart
+from email.mime.text import MIMEText
+
 app = Flask(__name__)
 app.secret_key = 'nti_secret_key_2024'
  
 # Set your desired password
-PASSWORD = "Pr0j3ctFW1m"
+PASSWORD = "C0mpu13R$"
 
 # Configure logging
 logging.basicConfig(level=logging.INFO, format='%(asctime)s - %(levelname)s - %(message)s')
 logger = logging.getLogger(__name__)
+
+
+SMTP_SERVER = "smtp.office365.com"
+SMTP_PORT = 587
+EMAIL_SENDER = "support@tnrautomaintenance.com"
+EMAIL_PASSWORD = "TnR@2025"
+
+@app.route('/webhook', methods=['POST'])
+def webhook():
+    """Webhook to receive email and plan from Wix"""
+    try:
+        data = request.json
+        email = data.get("email")
+        plan = data.get("plan")
+
+        if not email or not plan:
+            return jsonify({"error": "Missing email or plan"}), 400
+
+        # Validate Plan A requires .edu email
+        if plan.lower() == "a" and not email.endswith(".edu"):
+            return jsonify({"error": "Plan A requires an .edu email"}), 400
+
+        # Connect to DB and create a license
+        conn = connect_to_db()
+        activation_key = create_license(conn, email, "Individual")
+
+        # Send the email without mentioning the plan
+        send_license_email(email, activation_key)
+
+        return jsonify({"message": "License created and email sent"}), 200
+    except Exception as e:
+        logger.error(f"Webhook processing error: {e}")
+        return jsonify({"error": str(e)}), 500
+
+def send_rejection_email(email):
+    """Send an email notifying the user that they ignored the plan requirements"""
+    msg = MIMEMultipart()
+    msg['From'] = EMAIL_SENDER
+    msg['To'] = email
+    msg['Subject'] = "Plan Requirement Ignored - No Refund"
+
+    html_content = """
+    <!DOCTYPE html>
+    <html lang="en">
+    <head>
+        <meta charset="UTF-8">
+        <meta name="viewport" content="width=device-width, initial-scale=1.0">
+        <title>Plan Requirement Ignored</title>
+        <style>
+            body {
+                font-family: Arial, sans-serif;
+                text-align: center;
+                background-color: #f8f9fa;
+                margin: 0;
+                padding: 20px;
+            }
+            .container {
+                max-width: 600px;
+                background: white;
+                padding: 20px;
+                margin: 50px auto;
+                border-radius: 8px;
+                box-shadow: 0px 4px 10px rgba(0, 0, 0, 0.1);
+            }
+            h2 {
+                color: #d9534f;
+            }
+            p {
+                font-size: 16px;
+                color: #333;
+                line-height: 1.6;
+            }
+            a {
+                color: #007bff;
+                text-decoration: none;
+                font-weight: bold;
+            }
+            a:hover {
+                text-decoration: underline;
+            }
+            .support {
+                margin-top: 20px;
+                padding: 10px;
+                background-color: #f8d7da;
+                color: #721c24;
+                border-radius: 5px;
+            }
+        </style>
+    </head>
+    <body>
+        <div class="container">
+            <h2>Plan Requirement Ignored</h2>
+            <p>You attempted to sign up for a plan that requires a <strong>.edu email</strong>, but your provided email did not meet this requirement.</p>
+            <p>As stated in our <a href="http://yourwebsite.com/terms">Terms of Service</a> and <a href="http://yourwebsite.com/refund-policy">Refund Policy</a>, 
+            which you agreed to before purchasing, no refunds will be granted for attempts to fraudulently bypass system requirements.</p>
+            <div class="support">
+                <p>If you believe this was a mistake, you may request an exception via 
+                <a href="mailto:support@tnrautomaintenance.com">support@tnrautomaintenance.com</a>.</p>
+            </div>
+        </div>
+    </body>
+    </html>
+    """
+
+    msg.attach(MIMEText(html_content, 'html'))
+
+    with smtplib.SMTP(SMTP_SERVER, SMTP_PORT) as server:
+        server.starttls()
+        server.login(EMAIL_SENDER, EMAIL_PASSWORD)
+        server.sendmail(EMAIL_SENDER, email, msg.as_string())
+
+    logger.info(f"Fraud rejection email sent to {email}")
+
+def send_license_email(email, activation_key):
+    """Send an HTML email with the license key and attach the installer."""
+    msg = MIMEMultipart()
+    msg['From'] = EMAIL_SENDER
+    msg['To'] = email
+    msg['Subject'] = "Your NTi License Activation Key"
+
+    # HTML content with the activation key inserted
+    html_content = f"""
+    <html lang="en">
+    <head>
+        <meta charset="UTF-8">
+        <meta name="viewport" content="width=device-width, initial-scale=1.0">
+        <title>License Activation</title>
+        <style>
+            body {{
+                font-family: Arial, sans-serif;
+                text-align: center;
+                background-color: #f8f9fa;
+                margin: 0;
+                padding: 20px;
+            }}
+            .container {{
+                max-width: 600px;
+                background: white;
+                padding: 20px;
+                margin: 50px auto;
+                border-radius: 8px;
+                box-shadow: 0px 4px 10px rgba(0, 0, 0, 0.1);
+            }}
+            h2 {{
+                color: #d9534f;
+            }}
+            p {{
+                font-size: 16px;
+                color: #333;
+                line-height: 1.6;
+            }}
+            a {{
+                color: #007bff;
+                text-decoration: none;
+                font-weight: bold;
+            }}
+            a:hover {{
+                text-decoration: underline;
+            }}
+            .support {{
+                margin-top: 20px;
+                padding: 10px;
+                background-color: #f8d7da;
+                color: #721c24;
+                border-radius: 5px;
+            }}
+        </style>
+    </head>
+    <body>
+        <div class="container">
+            <h2>Welcome to TNR Auto Maintenance</h2>
+            <p>Thank you for signing up for TNR Auto Maintenance. Please see below for your license key and installer.</p>
+            <p><strong>Activation Key:</strong> {activation_key}</p>
+            <p>You can download the installer attached to this email.</p>
+            <div class="support">
+                <p>If you have any questions, you may reach us at
+                <a href="mailto:support@tnrautomaintenance.com">support@tnrautomaintenance.com</a>.</p>
+            </div>
+        </div>
+    </body>
+    </html>
+    """
+    
+    msg.attach(MIMEText(html_content, 'html'))
+    
+    # Attach the installer
+    installer_path = "installer.exe"
+    if os.path.exists(installer_path):
+        with open(installer_path, "rb") as attachment:
+            part = MIMEBase("application", "octet-stream")
+            part.set_payload(attachment.read())
+            encoders.encode_base64(part)
+            part.add_header("Content-Disposition", f"attachment; filename={os.path.basename(installer_path)}")
+            msg.attach(part)
+    else:
+        logger.error("installer.exe not found in the directory.")
+    
+    # Send email
+    try:
+        with smtplib.SMTP(SMTP_SERVER, SMTP_PORT) as server:
+            server.starttls()
+            server.login(EMAIL_SENDER, EMAIL_PASSWORD)
+            server.sendmail(EMAIL_SENDER, email, msg.as_string())
+        logger.info(f"License email sent to {email}")
+    except Exception as e:
+        logger.error(f"Failed to send email to {email}: {e}")
+
 
 # Database operations
 def create_license(conn, user_id, company):
