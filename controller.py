@@ -292,18 +292,8 @@ def filter_licenses(licenses, search_term):
 # Password protection
 @app.route('/login', methods=['GET', 'POST'])
 def login():
-    """ Password login page route """
-    if request.method == 'POST':
-        password = request.form.get('password')
-        if password == PASSWORD:
-            session['logged_in'] = True
-            flash("Login successful!", "success")
-            return redirect(url_for('index'))
-        else:
-            flash("Incorrect password. Please try again.", "error")
-            return render_template('login.html')
-    
-    return render_template('login.html')
+    return redirect(url_for('index'))
+
 
 @app.route('/')
 def index():
