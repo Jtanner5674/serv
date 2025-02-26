@@ -21,4 +21,4 @@ if __name__ == "__main__":
     key_path = os.path.join(BASE_DIR, "private.key")
     
     # Run the Flask app with SSL on port 443
-    app.run(host="0.0.0.0", port=80, ssl_context=(cert_path, key_path))
+    app.run(host="0.0.0.0", port=443, ssl_context=(cert_path, key_path))
